@@ -1,8 +1,9 @@
-import aiohttp
+import logging
 import asyncio
 import sys
 from datetime import datetime, timedelta
 
+import aiohttp
 
 OPTION = sys.argv[1]
 API = 'https://api.privatbank.ua/p24api/exchange_rates?json&date='
@@ -28,28 +29,34 @@ async def main():
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(link) as response:
-                data = await response.json()
-                for el in data['exchangeRate']:
-                    if el['currency'] == 'EUR' or el['currency'] == 'USD':
-                        date = data['date']
-                        currency = el['currency']
-                        sale = el['saleRate']
-                        purchase = el['purchaseRate']
+                if response.status == 200:
+                    data = await response.json()
+                    for el in data['exchangeRate']:
+                        if el['currency'] == 'EUR' or el['currency'] == 'USD':
+                            date = data['date']
+                            currency = el['currency']
+                            sale = el['saleRate']
+                            purchase = el['purchaseRate']
 
-                        convert_data = {
-                            date: {
-                                currency: {
-                                    'sale': sale,
-                                    'purchase': purchase
+                            convert_data = {
+                                date: {
+                                    currency: {
+                                        'sale': sale,
+                                        'purchase': purchase
+                                    }
                                 }
                             }
-                        }
 
-                        result.append(convert_data)
-        except aiohttp.ClientConnectorError as er:
-            return f'Connection error: {link}', str(er)
+                            result.append(convert_data)
+                else:
+                    logging.error(f'Error status: {response.status}')
+        except aiohttp.ClientConnectorError:
+            logging.error(f'Connection error: {link}')
+        except aiohttp.client_exceptions.InvalidURL as er: # noqa
+            logging.error(f'{link}')
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.ERROR, format='%(message)s')
     asyncio.run(main())
     print(result)
