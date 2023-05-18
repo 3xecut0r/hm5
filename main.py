@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import aiohttp
 
+
 OPTION = sys.argv[1]
 API = 'https://api.privatbank.ua/p24api/exchange_rates?json&date='
 
